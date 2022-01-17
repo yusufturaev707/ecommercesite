@@ -5,6 +5,7 @@
         <div class="col-lg-6">
             <div class="box-element" id="form-wrapper">
                 <form id="form">
+                    {% csrf_token %}
                     <div id="user-info">
                         <div class="form-field">
                             <input required class="form-control" type="text" name="name" placeholder="Name..">
@@ -71,7 +72,7 @@
     <script type="text/javascript">
 
         var shipping = '{{order.shipping}}'
-        var total = '{{ order.get_cart_total|floatformat:2 }}'
+        var total = '{{ order.get_cart_total }}'
 
         if (shipping == 'False') {
             document.getElementById('shipping-info').innerHTML = ''
@@ -81,12 +82,15 @@
             document.getElementById('user-info').innerHTML = ""
         }
 
-        if (shipping == 'False' && user != 'AnonymouseUser') {
+        if (shipping == 'False' && user != 'AnonymousUser') {
             document.getElementById('form-wrapper').classList.add('hidden')
             document.getElementById('payment-info').classList.remove('hidden')
         }
 
         var form = document.getElementById('form')
+        csrftoken = form.getElementsByTagName("input")[0].value
+
+        console.log('Newtoken:', form.getElementsByTagName("input")[0].value)
 
         form.addEventListener('submit', function (e) {
             e.preventDefault()
@@ -101,7 +105,7 @@
         function submitFormData() {
             console.log('Payment button clicked')
 
-            var userFormdata = {
+            var userFormData = {
                 'name': null,
                 'email': null,
                 'total': total,
@@ -120,9 +124,9 @@
                 shippingInfo.state = form.state.value
                 shippingInfo.zipcode = form.zipcode.value
             }
-            if (user == 'AnonymouseUser') {
-                userFormata.name = form.name.value
-                userFormata.email = form.email.value
+            if (user === 'AnonymousUser') {
+                userFormData.name = form.name.value
+                userFormData.email = form.email.value
             }
 
             var url = '/process_order/'
@@ -133,12 +137,15 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrftoken,
                 },
-                body: JSON.stringify({'form': userFormdata, 'shipping': shippingInfo})
+                body: JSON.stringify({'form': userFormData, 'shipping': shippingInfo})
             })
                 .then((response) => response.json())
             .then((data)=>{
                 console.log('Success:', data);
                 alert("Transaction completed");
+
+                cart = {}
+                document.cookie = 'cart=' + JSON.stringify(cart) + ";domain=;path=/"
                 window.location.href = "{% url 'store' %}"
             })
 
